@@ -23,6 +23,7 @@ var simmgr = {
 	pulseCountVpc: 0,
 	quickInterval : 40,
 	statusInterval : 500,
+	longStatusInterval : 500,
 	running : 0,
 	audioPlayStarted : 0,
 	mediaPlayStarted : 0,
@@ -77,13 +78,14 @@ var simmgr = {
 	getQuickStatus : function () {
 		// get unique time stamp
 		simmgr.timeStamp = new Date().getTime();
-		
+		//console.log(BROWSER_CGI + "simstatus.cgi  quick" );
 		$.ajax({
 			url: BROWSER_CGI + 'simstatus.cgi',
 			type: 'get',
 			dataType: 'json',
 			data: { qstat : simmgr.timeStamp },
 			success: function(response,  textStatus, jqXHR ) {
+				
 				if ( response.respiration.breathCount != simmgr.breathCount )
 				{
 					simmgr.breathCount = response.respiration.breathCount;
@@ -139,13 +141,13 @@ console.log('defib: here');
 	getStatus : function () {
 		// get unique time stamp
 		simmgr.timeStamp = new Date().getTime();
-			
 		$.ajax({
 			url: BROWSER_CGI + 'simstatus.cgi',
 			type: 'get',
 			dataType: 'json',
 			data: { status: simmgr.timeStamp },
 			success: function(response,  textStatus, jqXHR ) {
+				//console.log("status returns length: ", response.length );
 				if ( simmgr.isLocalDisplay() )
 				{
 /*
@@ -311,7 +313,7 @@ console.log('defib: here');
 					if(typeof(response.cardiac.heart_sound) != "undefined") {
 						controls.heartSound.soundName = response.cardiac.heart_sound;
 						
-						if ( simmgr.isTeleSim() == true && typeof(simsound) != 'undefined' )
+						if ( typeof(simsound) != 'undefined' )
 						{
 							simsound.lookupHeartSound();
 						}
@@ -531,14 +533,17 @@ console.log('defib: here');
 //console.dir(response.telesim[0]);
 //console.log('Next 1: ' + telesim.imageNext[1]);
 //console.dir(response.telesim[1]);
-					if( response.telesim[0].next != telesim.imageNext[0] && typeof telesim.imageList[0] != "undefined" ) {
-						telesim.imageNext[0] = response.telesim[0].next;
-						telesim.processTelesimCommand( response.telesim, 0 );
-					}
-					
-					if( response.telesim[1].next != telesim.imageNext[1] && typeof telesim.imageList[1] != "undefined" ) {
-						telesim.imageNext[1] = response.telesim[1].next;
-						telesim.processTelesimCommand( response.telesim, 1 );
+					if ( typeof(response.telesim[0]) !== 'undefined' )
+					{
+						if( response.telesim[0].next != telesim.imageNext[0] && typeof telesim.imageList[0] != "undefined" ) {
+							telesim.imageNext[0] = response.telesim[0].next;
+							telesim.processTelesimCommand( response.telesim, 0 );
+						}
+						
+						if( response.telesim[1].next != telesim.imageNext[1] && typeof telesim.imageList[1] != "undefined" ) {
+							telesim.imageNext[1] = response.telesim[1].next;
+							telesim.processTelesimCommand( response.telesim, 1 );
+						}
 					}
 					
 				}
@@ -1159,10 +1164,24 @@ console.log("New scenario state RUNNING");
 						telesim.setAuscultation( coord );
 					}
 				}
+				if ( simmgr.running == -1 )
+				{
+					simmgr.running = 1;
+					clearTimeout(simmgr.quickTimer );
+					clearTimeout(simmgr.statusTimer );
+					simmgr.quickTimer = setTimeout(function() { simmgr.getQuickStatus(); }, simmgr.quickInterval );
+					simmgr.statusTimer = setTimeout(function() { simmgr.getStatus(); }, simmgr.statusInterval );
+				}
 			},
 
 			error: function( jqXHR,  textStatus,  errorThrown){
-				console.log("error: "+textStatus+" : "+errorThrown );
+				console.log("AJAX error: ", textStatus, errorThrown );
+				if ( textStatus == "error" )
+				{
+					simmgr.running = -1;
+					$(".welcome-title").html("The Server is not responding" ).css({'color':'red'});
+					simmgr.statusTimer = setTimeout(function() { simmgr.getStatus(); }, simmgr.longStatusInterval );
+				}
 			},
 			complete: function(jqXHR,  textStatus ){
 				if ( simmgr.running == 1 )

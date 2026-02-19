@@ -194,6 +194,121 @@ See gpl.html
 			});
 		},
 
+		respRhythm: function() {
+			$.ajax({
+				url: BROWSER_AJAX + 'ajaxGetRespRhythm.php',
+				type: 'post',
+				async: false,
+				data: {
+						currentECG: controls.heartRhythm.currentRhythm, 
+						currentAmplitude: controls.heartRhythm.vfibAmplitude, 
+						currentPulse: controls.heartRhythm.vpcResponse, 
+						currentPulseFrequency: controls.heartRhythm.vpcFrequency, 
+						PEA: controls.heartRhythm.pea,
+						arrest: controls.heartRhythm.arrest,
+				},
+				dataType: 'json',
+				success: function(response) {
+					if(response.status == AJAX_STATUS_OK) {
+						modal.showModal(response);
+						modal.bindCloseModal();
+						
+						// heart rhythm controls
+						controls.heartRhythm.setHeartRhythmModal();
+						
+						// see if we are in r on t, adjust minimum value and value accordingly
+						var modalMinValue = (controls.heartRhythm.currentRhythm == 'vtach3') ? controls.heartRate.rOnTMinValue : controls.heartRate.normalMinValue;
+						var modalValue = controls.heartRate.value;
+						if(modalValue < modalMinValue) {
+							modalValue = modalMinValue;
+						}
+						
+						// bind controls
+						// add step, min and max
+						$('.control-slider-1').attr({
+							'step': controls.heartRate.increment,
+							'min': modalMinValue,
+							'max': controls.heartRate.maxValue
+						}).val(modalValue);
+			
+						// bind controls
+						controls.heartRate.slideBar = $(".control-slider-1").slider({
+							create: function() {
+								$('.ui-slider').css({
+									'margin': '0'
+								});
+							}
+						});
+						
+						$('.strip-value').val(modalValue);
+						
+						// bind apply button
+						$('.modal-button.apply').click(function() {
+							controls.heartRate.setHeartRate();
+							
+							// send values to sim mgr
+							simmgr.sendChange({
+												'set:cardiac:rhythm': $('select.ecg-select option:selected').val(),
+												'set:cardiac:vpc': $('select.pulse-select option:selected').val(),
+												'set:cardiac:pea': ($('input#PEA').is(':checked') == true) ? 1 : 0,
+												'set:cardiac:arrest': ($('input#arrest').is(':checked') == true) ? 1 : 0,
+												'set:cardiac:vpc_freq': $('select.frequency-select option:selected').val(),
+												'set:cardiac:vfib_amplitude': $('select.amplitude-select option:selected').val(),
+												'set:cardiac:rate': $('.strip-value.new').val()												
+											});
+							
+							modal.closeModal();
+						});
+						
+						// bind change in new value
+						$('.strip-value.new').change(controls.heartRate.validateNewValue);
+						
+						// bind increment and decrement
+						$('.control-incr-decr-rate.decr-rate').click(function() {
+							$('.strip-value.new').val(parseInt($('.strip-value.new').val()) - 1);
+							controls.heartRate.validateNewValue();
+						});
+						$('.control-incr-decr-rate.incr-rate').click(function() {
+							$('.strip-value.new').val(parseInt($('.strip-value.new').val()) + 1);
+							controls.heartRate.validateNewValue();
+						});
+						
+						// bind ecg rhythm select
+						$('select.ecg-select').change(function() {
+							var ecgMin = controls.heartRate.normalMinValue;
+							var ecgValue = controls.heartRate.value;
+							if($(this).children('option:selected').val() == 'vtach3') {
+								ecgMin = controls.heartRate.rOnTMinValue;
+								if(ecgValue < controls.heartRate.rOnTMinValue) {
+									ecgValue = controls.heartRate.rOnTMinValue;
+								}
+							} else if($(this).children('option:selected').val() != 'asystole' && $(this).children('option:selected').val() != 'vfib') {
+								if(controls.heartRhythm.currentRhythm == 'asystole' || controls.heartRhythm.currentRhythm == 'vfib') {
+									ecgValue = 100;
+								}
+							}
+							controls.heartRhythm.setHeartRhythmModal();
+
+							// bind controls
+							$('.control-slider-1').val(ecgValue);
+							controls.heartRate.slideBar = $(".control-slider-1").slider({
+								value: ecgValue,
+								min: ecgMin,
+								max: controls.heartRate.maxValue,
+								step: 1,
+								slide: function(event, ui) {
+									$('.strip-value.new').val(ui.value);
+								}
+							});
+							$('.strip-value').val(ecgValue);
+							controls.heartRate.slideBar.slider("refresh");
+						});						
+						
+					}
+				}
+			});
+		},
+
 		awRR: function() {
 			$.ajax({
 				url: BROWSER_AJAX + 'ajaxGetSingleControlContent.php',
