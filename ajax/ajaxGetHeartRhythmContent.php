@@ -81,18 +81,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 			<p class="modal-section-title">Arrest</p>
 			<input type="checkbox" value="yes" ' . $arrestChecked . ' name="arrest" id="arrest">
 		</div>
-		<div class="control-modal-div heart-rhythm pulses clearer">
-			<p class="modal-section-title">VPC</p>
-			<select class="pulse-select modal-select">
-				' . controls::getPulseDropDown($currentPulse) . '
-			</select>
-		</div>		
-		<div class="control-modal-div heart-rhythm frequency">
-			<p class="modal-section-title">VPC Frequency</p>
-			<select class="frequency-select modal-select">
-				' . controls::getPulseFrequencyDropDown($currentPulseFrequency) . '
-			</select>			
-		</div>
+	
 		
 		
 		<hr class="modal-divider clearer" />
