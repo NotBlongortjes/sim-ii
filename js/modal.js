@@ -79,6 +79,8 @@ See gpl.html
 			});
 		},
 		
+		
+
 		heartRhythm: function() {
 			$.ajax({
 				url: BROWSER_AJAX + 'ajaxGetHeartRhythmContent.php',
@@ -134,10 +136,10 @@ See gpl.html
 							// send values to sim mgr
 							simmgr.sendChange({
 												'set:cardiac:rhythm': $('select.ecg-select option:selected').val(),
-												'set:cardiac:vpc': $('select.pulse-select option:selected').val(),
+												/*'set:cardiac:vpc': $('select.pulse-select option:selected').val(),*/
 												'set:cardiac:pea': ($('input#PEA').is(':checked') == true) ? 1 : 0,
 												'set:cardiac:arrest': ($('input#arrest').is(':checked') == true) ? 1 : 0,
-												'set:cardiac:vpc_freq': $('select.frequency-select option:selected').val(),
+												/*'set:cardiac:vpc_freq': $('select.frequency-select option:selected').val(),*/
 												'set:cardiac:vfib_amplitude': $('select.amplitude-select option:selected').val(),
 												'set:cardiac:rate': $('.strip-value.new').val()												
 											});
@@ -395,43 +397,53 @@ See gpl.html
 				url: BROWSER_AJAX + 'ajaxGetSingleControlContent.php',
 				type: 'post',
 				async: false,
-				data: {ModalTitle: 'Set etCO<sub>2</sub>', ControlTitle: "etCO<sub>2</sub>", ModalUnits: controls.etCO2.modalUnitsLabel},
-				dataType: 'json',
-				success: function(response) {
-					if(response.status == AJAX_STATUS_OK) {
-						modal.showModal(response);
-						modal.bindCloseModal();
-						
-						modal.initSingleSlider('etCO2');
+				data: {
+					ModalTitle: 'Set etCO₂',
+					ControlTitle: "etCO₂",
+					ModalUnits: controls.etco2.modalUnitsLabel
+					},
+						dataType: 'json',
+						success: function(response) {
+							if(response.status == AJAX_STATUS_OK) {
+								modal.showModal(response);
+								modal.bindCloseModal();
 
-						$('.strip-value').val(controls.etCO2.value);
-						
-						// bind apply button
-						$('.modal-button.apply').click(function() {
-							rate = $('.strip-value.new').val();
-							time = $('.transfer-time').val();
+								modal.initSingleSlider('etco2');
 
-							simmgr.sendChange( { 'set:respiration:etco2' : rate, 'set:respiration:transfer_time' : time } );
-							modal.closeModal();
-						});
-						
-						// bind change in new value
-						$('.strip-value.new').change(controls.etCO2.validateNewValue);
-						
-						// bind increment and decrement
-						$('.control-incr-decr-rate.decr-rate').click(function() {
-							$('.strip-value.new').val(parseInt($('.strip-value.new').val()) - 1);
-							controls.etCO2.validateNewValue();
-						});
-						$('.control-incr-decr-rate.incr-rate').click(function() {
-							$('.strip-value.new').val(parseInt($('.strip-value.new').val()) + 1);
-							controls.etCO2.validateNewValue();
-						});
-					}
-				}
-			});
-		},
-		
+								$('.strip-value').val(controls.etco2.value);
+
+								$('.modal-button.apply').click(function() {
+									let value = $('.strip-value.new').val();
+									let time = $('.transfer-time').val();
+
+									simmgr.sendChange({
+										'set:capnography:etco2': value,
+										'set:capnography:transfer_time': time
+									});
+
+									modal.closeModal();
+								});
+
+								$('.strip-value.new').change(controls.etco2.validateNewValue);
+
+								$('.control-incr-decr-rate.decr-rate').click(function() {
+									$('.strip-value.new').val(
+										parseInt($('.strip-value.new').val()) - 1
+									);
+									controls.etco2.validateNewValue();
+								});
+
+								$('.control-incr-decr-rate.incr-rate').click(function() {
+									$('.strip-value.new').val(
+										parseInt($('.strip-value.new').val()) + 1
+									);
+									controls.etco2.validateNewValue();
+								});
+							}
+						}
+					});
+				},
+
 		Tperi: function() {
 			$.ajax({
 				url: BROWSER_AJAX + 'ajaxGetTperiControlContent.php',
